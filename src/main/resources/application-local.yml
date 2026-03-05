@@ -23,3 +23,7 @@ springdoc:
 
 server:
   port: 8080
+
+portone:
+  api-secret: test-api-secret
+  webhook-secret: test-webhook-secret

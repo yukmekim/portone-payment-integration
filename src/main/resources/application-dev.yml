@@ -16,3 +16,7 @@ springdoc:
 
 server:
   port: 8080
+
+portone:
+  api-secret: ${PORTONE_API_SECRET}
+  webhook-secret: ${PORTONE_WEBHOOK_SECRET}
