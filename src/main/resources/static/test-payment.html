@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>결제 테스트</title>
+  <script src="https://cdn.portone.io/v2/browser-sdk.js" async defer></script>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    h2 { border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; }
+    input, select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    button { width: 100%; padding: 12px; background: #4f46e5; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-top: 8px; }
+    button:disabled { background: #a5b4fc; cursor: not-allowed; }
+    pre { background: #f4f4f4; padding: 12px; border-radius: 4px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; }
+    .result { margin-top: 20px; }
+    .success { color: #16a34a; }
+    .error { color: #dc2626; }
+    .hint { font-size: 12px; color: #888; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <h2>결제 테스트 페이지</h2>
+  <p class="hint">
+    UUID는 앱 시작 후 <a href="/h2-console" target="_blank">H2 Console</a>에서 확인하세요.<br>
+    (JDBC URL: jdbc:h2:mem:testdb / 사용자명: sa)
+  </p>
+
+  <div class="form-group">
+    <label>포트원 Store ID</label>
+    <input id="storeId" type="text" placeholder="store-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+  </div>
+  <div class="form-group">
+    <label>User ID (UUID)</label>
+    <input id="userId" type="text" placeholder="H2 Console에서 확인" />
+  </div>
+  <div class="form-group">
+    <label>Product ID (UUID)</label>
+    <input id="productId" type="text" placeholder="H2 Console에서 확인" />
+  </div>
+  <div class="form-group">
+    <label>결제 수단</label>
+    <select id="paymentMethod">
+      <option value="CARD">카드 (토스페이먼츠 통합창)</option>
+      <option value="KAKAOPAY">카카오페이</option>
+      <option value="NAVERPAY">네이버페이</option>
+      <option value="VIRTUAL_ACCOUNT">가상계좌</option>
+      <option value="TRANSFER">계좌이체</option>
+      <option value="MOBILE">휴대폰</option>
+    </select>
+  </div>
+
+  <button id="payBtn" onclick="startPayment()">결제 시작</button>
+
+  <div class="result" id="result" style="display:none">
+    <h2>결과</h2>
+    <pre id="resultContent"></pre>
+  </div>
+
+  <script>
+    async function startPayment() {
+      const storeId = document.getElementById('storeId').value.trim();
+      const userId = document.getElementById('userId').value.trim();
+      const productId = document.getElementById('productId').value.trim();
+      const paymentMethod = document.getElementById('paymentMethod').value;
+
+      if (!storeId || !userId || !productId) {
+        alert('Store ID, User ID, Product ID를 모두 입력해주세요.');
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        // 1. 결제 준비
+        const prepareRes = await fetch('/api/payments/prepare', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, productId, paymentMethod, currency: 'KRW' }),
+        });
+
+        const prepareBody = await prepareRes.json();
+        if (!prepareBody.success) {
+          showResult('결제 준비 실패', prepareBody, true);
+          return;
+        }
+
+        const { merchantUid, channelKey, productName, amount, customerEmail, customerName, customerPhone } = prepareBody.data;
+        showResult('결제 준비 완료', prepareBody.data);
+
+        // 2. 포트원 결제창 호출
+        const EASY_PAY_PROVIDERS = {
+          KAKAOPAY: 'EASY_PAY_PROVIDER_KAKAOPAY',
+          NAVERPAY: 'EASY_PAY_PROVIDER_NAVERPAY',
+        };
+        const isEasyPay = paymentMethod in EASY_PAY_PROVIDERS;
+        const payment = await PortOne.requestPayment({
+          storeId,
+          channelKey,
+          paymentId: merchantUid,
+          orderName: productName,
+          totalAmount: amount,
+          currency: 'KRW',
+          payMethod: isEasyPay ? 'EASY_PAY' : paymentMethod,
+          customer: {
+            email: customerEmail,
+            fullName: customerName,
+            phoneNumber: customerPhone,
+          },
+          ...(isEasyPay && {
+            easyPay: {
+              easyPayProvider: EASY_PAY_PROVIDERS[paymentMethod],
+            },
+          }),
+          ...(paymentMethod === 'VIRTUAL_ACCOUNT' && {
+            virtualAccount: {
+              accountExpiry: { validHours: 1 },
+            },
+          }),
+          ...(paymentMethod === 'MOBILE' && {
+            productType: 'PRODUCT_TYPE_DIGITAL',
+          }),
+        });
+
+        if (payment.code !== undefined) {
+          showResult('결제 실패: ' + payment.message, payment, true);
+          return;
+        }
+
+        // 3. 결제 완료 검증
+        const completeRes = await fetch('/api/payments/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ merchantUid: payment.paymentId }),
+        });
+
+        const completeBody = await completeRes.json();
+        showResult(
+          completeBody.success ? '결제 완료' : '검증 실패',
+          completeBody,
+          !completeBody.success
+        );
+
+      } catch (e) {
+        showResult('오류 발생', { message: e.message }, true);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function setLoading(isLoading) {
+      const btn = document.getElementById('payBtn');
+      btn.disabled = isLoading;
+      btn.textContent = isLoading ? '처리 중...' : '결제 시작';
+    }
+
+    function showResult(title, data, isError = false) {
+      const resultEl = document.getElementById('result');
+      const contentEl = document.getElementById('resultContent');
+      resultEl.style.display = 'block';
+      contentEl.className = isError ? 'error' : 'success';
+      contentEl.textContent = `[${title}]\n` + JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
