@@ -8,7 +8,6 @@ import dev.yukmekim.payment.portonepaymentintegration.domain.ProductStoreMapping
 import dev.yukmekim.payment.portonepaymentintegration.domain.Purchase;
 import dev.yukmekim.payment.portonepaymentintegration.domain.Refund;
 import dev.yukmekim.payment.portonepaymentintegration.domain.User;
-import dev.yukmekim.payment.portonepaymentintegration.domain.enums.StoreType;
 import dev.yukmekim.payment.portonepaymentintegration.dto.request.PaymentCancelRequest;
 import dev.yukmekim.payment.portonepaymentintegration.dto.request.PaymentCompleteRequest;
 import dev.yukmekim.payment.portonepaymentintegration.dto.request.PaymentPrepareRequest;
