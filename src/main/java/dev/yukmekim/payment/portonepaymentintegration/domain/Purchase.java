@@ -68,9 +68,11 @@ public class Purchase {
     @Column(columnDefinition = "text")
     private String purchaseToken;
 
-    private String pgProvider;
-
+    @Column(length = 50)
     private String paymentMethod;
+
+    @Column(length = 100)
+    private String paymentProvider;
 
     @Column(precision = 10, scale = 2)
     private BigDecimal refundedAmount;
@@ -88,7 +90,7 @@ public class Purchase {
     private Purchase(User user, Product product, StoreType storeType, String merchantUid,
                      BigDecimal amount, String currency, PurchaseStatus status,
                      String externalTransactionId, String originalTransactionId,
-                     String purchaseToken, String pgProvider, String paymentMethod) {
+                     String purchaseToken, String paymentMethod, String paymentProvider) {
         this.user = user;
         this.product = product;
         this.storeType = storeType;
@@ -99,17 +101,17 @@ public class Purchase {
         this.externalTransactionId = externalTransactionId;
         this.originalTransactionId = originalTransactionId;
         this.purchaseToken = purchaseToken;
-        this.pgProvider = pgProvider;
         this.paymentMethod = paymentMethod;
+        this.paymentProvider = paymentProvider;
         this.refundedAmount = BigDecimal.ZERO;
     }
 
-    public void markAsPaid(String externalTransactionId, String pgProvider,
-                           String paymentMethod, String storeData) {
+    public void markAsPaid(String externalTransactionId, String paymentMethod,
+                           String paymentProvider, String storeData) {
         this.status = PurchaseStatus.PAID;
         this.externalTransactionId = externalTransactionId;
-        this.pgProvider = pgProvider;
         this.paymentMethod = paymentMethod;
+        this.paymentProvider = paymentProvider;
         this.storeData = storeData;
         this.purchasedAt = LocalDateTime.now();
     }

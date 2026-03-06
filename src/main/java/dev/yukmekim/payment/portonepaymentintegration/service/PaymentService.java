@@ -22,6 +22,9 @@ import dev.yukmekim.payment.portonepaymentintegration.repository.UserRepository;
 import io.portone.sdk.server.payment.PaidPayment;
 import io.portone.sdk.server.payment.Payment;
 import io.portone.sdk.server.payment.PaymentClient;
+import io.portone.sdk.server.payment.PaymentMethod;
+import io.portone.sdk.server.payment.PaymentMethodCard;
+import io.portone.sdk.server.payment.PaymentMethodEasyPay;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -100,8 +103,8 @@ public class PaymentService {
 
         purchase.markAsPaid(
                 paidPayment.getPgTxId(),
-                paidPayment.getChannel().getPgProvider().getValue(),
-                paidPayment.getMethod() != null ? paidPayment.getMethod().toString() : null,
+                extractPaymentMethodType(paidPayment.getMethod()),
+                extractPaymentProvider(paidPayment.getMethod()),
                 serializeToJson(paidPayment)
         );
 
@@ -179,6 +182,26 @@ public class PaymentService {
             log.error("포트원 결제 취소 실패: paymentId={}", paymentId, e);
             throw new BusinessException(ErrorCode.PAYMENT_CANCEL_FAILED);
         }
+    }
+
+    private String extractPaymentProvider(PaymentMethod method) {
+        if (method instanceof PaymentMethodCard card && card.getCard() != null) {
+            return card.getCard().getPublisher();
+        }
+        if (method instanceof PaymentMethodEasyPay easyPay && easyPay.getProvider() != null) {
+            return easyPay.getProvider().getValue();
+        }
+        return null;
+    }
+
+    private String extractPaymentMethodType(PaymentMethod method) {
+        if (method == null) return null;
+        // PaymentMethodCard → CARD, PaymentMethodEasyPay → EASY_PAY, PaymentMethodVirtualAccount → VIRTUAL_ACCOUNT
+        return method.getClass().getSimpleName()
+                .replace("PaymentMethod", "")
+                .replaceAll("([A-Z])", "_$1")
+                .replaceAll("^_", "")
+                .toUpperCase();
     }
 
     private String serializeToJson(Object obj) {
