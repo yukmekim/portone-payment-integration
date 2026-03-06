@@ -54,7 +54,7 @@ public class PaymentService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "상품을 찾을 수 없습니다."));
 
         ProductStoreMapping storeMapping = productStoreMappingRepository
-                .findByProductAndStoreType(product, StoreType.PG)
+                .findByProductAndStoreType(product, request.storeType())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "상품 스토어 매핑 정보를 찾을 수 없습니다."));
 
         String merchantUid = MerchantUidGenerator.generate();
@@ -62,7 +62,7 @@ public class PaymentService {
         Purchase purchase = Purchase.builder()
                 .user(user)
                 .product(product)
-                .storeType(StoreType.PG)
+                .storeType(request.storeType())
                 .merchantUid(merchantUid)
                 .amount(storeMapping.getPrice())
                 .currency(request.currency())
@@ -72,7 +72,7 @@ public class PaymentService {
         purchaseRepository.save(purchase);
         log.info("결제 준비 완료: merchantUid={}, userId={}, productId={}", merchantUid, user.getId(), product.getId());
 
-        return new PaymentPrepareResponse(merchantUid, storeMapping.getName(), storeMapping.getPrice(), request.currency());
+        return new PaymentPrepareResponse(merchantUid, storeMapping.getStoreProductId(), storeMapping.getName(), storeMapping.getPrice(), request.currency());
     }
 
     @Transactional
