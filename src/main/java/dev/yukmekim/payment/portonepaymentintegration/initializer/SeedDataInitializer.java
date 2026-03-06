@@ -41,6 +41,7 @@ public class SeedDataInitializer implements ApplicationRunner {
         User user = User.builder()
                 .email("test@example.com")
                 .nickname("테스트유저")
+                .phoneNumber("01012345678")
                 .build();
 
         userRepository.save(user);

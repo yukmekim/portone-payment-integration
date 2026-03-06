@@ -8,6 +8,9 @@ public record PaymentPrepareResponse(
         String channelKey,
         String productName,
         BigDecimal amount,
-        String currency
+        String currency,
+        String customerEmail,
+        String customerName,
+        String customerPhone
 ) {
 }

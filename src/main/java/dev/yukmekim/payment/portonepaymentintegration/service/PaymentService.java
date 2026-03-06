@@ -31,6 +31,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import dev.yukmekim.payment.portonepaymentintegration.common.util.MerchantUidGenerator;
+import dev.yukmekim.payment.portonepaymentintegration.config.PortOneProperties;
+import dev.yukmekim.payment.portonepaymentintegration.domain.enums.StoreType;
 
 import java.math.BigDecimal;
 
@@ -46,6 +48,7 @@ public class PaymentService {
     private final RefundRepository refundRepository;
     private final PaymentClient paymentClient;
     private final ObjectMapper objectMapper;
+    private final PortOneProperties portOneProperties;
 
     @Transactional
     public PaymentPrepareResponse prepare(PaymentPrepareRequest request) {
@@ -55,8 +58,13 @@ public class PaymentService {
         Product product = productRepository.findByIdAndIsActiveTrue(request.productId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "상품을 찾을 수 없습니다."));
 
+        StoreType storeType = portOneProperties.routing().get(request.paymentMethod());
+        if (storeType == null) {
+            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "지원하지 않는 결제 수단입니다.");
+        }
+
         ProductStoreMapping storeMapping = productStoreMappingRepository
-                .findByProductAndStoreType(product, request.storeType())
+                .findByProductAndStoreType(product, storeType)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "상품 스토어 매핑 정보를 찾을 수 없습니다."));
 
         String merchantUid = MerchantUidGenerator.generate();
@@ -64,7 +72,7 @@ public class PaymentService {
         Purchase purchase = Purchase.builder()
                 .user(user)
                 .product(product)
-                .storeType(request.storeType())
+                .storeType(storeType)
                 .merchantUid(merchantUid)
                 .amount(storeMapping.getPrice())
                 .currency(request.currency())
@@ -74,7 +82,7 @@ public class PaymentService {
         purchaseRepository.save(purchase);
         log.info("결제 준비 완료: merchantUid={}, userId={}, productId={}", merchantUid, user.getId(), product.getId());
 
-        return new PaymentPrepareResponse(merchantUid, storeMapping.getStoreProductId(), storeMapping.getName(), storeMapping.getPrice(), request.currency());
+        return new PaymentPrepareResponse(merchantUid, storeMapping.getStoreProductId(), storeMapping.getName(), storeMapping.getPrice(), request.currency(), user.getEmail(), user.getNickname(), user.getPhoneNumber());
     }
 
     @Transactional

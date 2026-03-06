@@ -31,9 +31,13 @@ public class User extends BaseTime {
     @Column(nullable = false)
     private String nickname;
 
+    @Column(length = 20)
+    private String phoneNumber;
+
     @Builder
-    private User(String email, String nickname) {
+    private User(String email, String nickname, String phoneNumber) {
         this.email = email;
         this.nickname = nickname;
+        this.phoneNumber = phoneNumber;
     }
 }
