@@ -28,8 +28,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import dev.yukmekim.payment.portonepaymentintegration.common.util.MerchantUidGenerator;
+
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -56,7 +57,7 @@ public class PaymentService {
                 .findByProductAndStoreType(product, StoreType.PG)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "상품 스토어 매핑 정보를 찾을 수 없습니다."));
 
-        String merchantUid = "order-" + UUID.randomUUID();
+        String merchantUid = MerchantUidGenerator.generate();
 
         Purchase purchase = Purchase.builder()
                 .user(user)
