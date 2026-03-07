@@ -8,6 +8,7 @@ import dev.yukmekim.payment.portonepaymentintegration.domain.ProductStoreMapping
 import dev.yukmekim.payment.portonepaymentintegration.domain.Purchase;
 import dev.yukmekim.payment.portonepaymentintegration.domain.Refund;
 import dev.yukmekim.payment.portonepaymentintegration.domain.User;
+import dev.yukmekim.payment.portonepaymentintegration.domain.UserPointTransaction;
 import dev.yukmekim.payment.portonepaymentintegration.dto.request.PaymentCancelRequest;
 import dev.yukmekim.payment.portonepaymentintegration.dto.request.PaymentCompleteRequest;
 import dev.yukmekim.payment.portonepaymentintegration.dto.request.PaymentPrepareRequest;
@@ -18,6 +19,7 @@ import dev.yukmekim.payment.portonepaymentintegration.repository.ProductReposito
 import dev.yukmekim.payment.portonepaymentintegration.repository.ProductStoreMappingRepository;
 import dev.yukmekim.payment.portonepaymentintegration.repository.PurchaseRepository;
 import dev.yukmekim.payment.portonepaymentintegration.repository.RefundRepository;
+import dev.yukmekim.payment.portonepaymentintegration.repository.UserPointTransactionRepository;
 import dev.yukmekim.payment.portonepaymentintegration.repository.UserRepository;
 import io.portone.sdk.server.payment.PaidPayment;
 import io.portone.sdk.server.payment.Payment;
@@ -35,6 +37,7 @@ import dev.yukmekim.payment.portonepaymentintegration.config.PortOneProperties;
 import dev.yukmekim.payment.portonepaymentintegration.domain.enums.StoreType;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -46,6 +49,7 @@ public class PaymentService {
     private final ProductStoreMappingRepository productStoreMappingRepository;
     private final PurchaseRepository purchaseRepository;
     private final RefundRepository refundRepository;
+    private final UserPointTransactionRepository userPointTransactionRepository;
     private final PaymentClient paymentClient;
     private final ObjectMapper objectMapper;
     private final PortOneProperties portOneProperties;
@@ -116,6 +120,10 @@ public class PaymentService {
                 serializeToJson(paidPayment)
         );
 
+        if (purchase.getProduct().getProductType() == Product.ProductType.POINT) {
+            grantPoints(purchase);
+        }
+
         log.info("결제 완료: merchantUid={}, amount={}", request.merchantUid(), portoneAmount);
 
         return new PaymentCompleteResponse(
@@ -166,6 +174,49 @@ public class PaymentService {
                 purchase.getStatus(),
                 cancelAmount
         );
+    }
+
+    private void grantPoints(Purchase purchase) {
+        User user = purchase.getUser();
+        int pointAmount = purchase.getProduct().getPointAmount();
+
+        user.addChargedPoint(pointAmount);
+
+        UserPointTransaction.SubCategory subCategory = resolveSubCategory(purchase.getStoreType());
+        UserPointTransaction transaction = UserPointTransaction.builder()
+                .user(user)
+                .changePoint(pointAmount)
+                .remainPoint(user.getChargedPoint())
+                .description(resolvePointDescription(subCategory))
+                .category(UserPointTransaction.Category.PURCHASE)
+                .subCategory(subCategory)
+                .pointType(UserPointTransaction.PointType.CHARGED)
+                .expiresAt(LocalDateTime.now().plusYears(5))
+                .lotRemainingAmount(pointAmount)
+                .referenceId(purchase.getId())
+                .build();
+
+        userPointTransactionRepository.save(transaction);
+        log.info("포인트 지급 완료: userId={}, point={}, chargedPoint={}", user.getId(), pointAmount, user.getChargedPoint());
+    }
+
+    private UserPointTransaction.SubCategory resolveSubCategory(StoreType storeType) {
+        return switch (storeType) {
+            case PG_TOSS -> UserPointTransaction.SubCategory.PG_TOSS;
+            case PG_INICIS -> UserPointTransaction.SubCategory.PG_INICIS;
+            case GOOGLE -> UserPointTransaction.SubCategory.GOOGLE;
+            case IOS -> UserPointTransaction.SubCategory.APPLE;
+        };
+    }
+
+    private String resolvePointDescription(UserPointTransaction.SubCategory subCategory) {
+        return switch (subCategory) {
+            case GOOGLE -> "구글 인앱 구매 상품 지급";
+            case APPLE -> "앱스토어 구매 상품 지급";
+            case PG_TOSS -> "토스페이먼츠 결제 상품 지급";
+            case PG_INICIS -> "이니시스 결제 상품 지급";
+            case MISSION -> "미션 보상 상품 지급";
+        };
     }
 
     private Payment fetchPortonePayment(String paymentId) {

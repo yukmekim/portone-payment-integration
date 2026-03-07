@@ -39,9 +39,6 @@ public class UserPointTransaction {
     private User user;
 
     @Column(nullable = false)
-    private String reason;
-
-    @Column(nullable = false)
     private int changePoint;
 
     @Column(nullable = false)
@@ -74,12 +71,11 @@ public class UserPointTransaction {
     private LocalDateTime createdAt;
 
     @Builder
-    private UserPointTransaction(User user, String reason, int changePoint, int remainPoint,
+    private UserPointTransaction(User user, int changePoint, int remainPoint,
                                  String description, Category category, SubCategory subCategory,
                                  PointType pointType, LocalDateTime expiresAt,
                                  Integer lotRemainingAmount, UUID referenceId) {
         this.user = user;
-        this.reason = reason;
         this.changePoint = changePoint;
         this.remainPoint = remainPoint;
         this.description = description;
