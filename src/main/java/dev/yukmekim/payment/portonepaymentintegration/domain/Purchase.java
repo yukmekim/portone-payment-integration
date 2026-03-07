@@ -126,7 +126,11 @@ public class Purchase {
         this.storeData = storeData;
     }
 
+    public void markAsExpired() {
+        this.status = PurchaseStatus.EXPIRED;
+    }
+
     public enum PurchaseStatus {
-        PENDING, PENDING_CHANGE, CANCEL, REFUND, PAID, FAILED
+        PENDING, PENDING_CHANGE, CANCEL, REFUND, PAID, FAILED, EXPIRED
     }
 }
