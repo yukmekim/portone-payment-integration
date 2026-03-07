@@ -34,10 +34,36 @@ public class User extends BaseTime {
     @Column(length = 20)
     private String phoneNumber;
 
+    @Column(nullable = false)
+    private int chargedPoint;
+
+    @Column(nullable = false)
+    private int earnedPoint;
+
+    @Column(nullable = false)
+    private int totalPoint;
+
     @Builder
     private User(String email, String nickname, String phoneNumber) {
         this.email = email;
         this.nickname = nickname;
         this.phoneNumber = phoneNumber;
+        this.chargedPoint = 0;
+        this.earnedPoint = 0;
+        this.totalPoint = 0;
+    }
+
+    public void addChargedPoint(int amount) {
+        this.chargedPoint += amount;
+        this.totalPoint = this.chargedPoint + this.earnedPoint;
+    }
+
+    public void addEarnedPoint(int amount) {
+        this.earnedPoint += amount;
+        this.totalPoint = this.chargedPoint + this.earnedPoint;
+    }
+
+    public void deductPoint(int amount) {
+        this.totalPoint -= amount;
     }
 }
