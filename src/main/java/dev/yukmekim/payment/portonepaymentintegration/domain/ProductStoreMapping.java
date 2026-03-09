@@ -39,7 +39,6 @@ public class ProductStoreMapping {
     @Column(nullable = false)
     private StoreType storeType;
 
-    @Column(nullable = false)
     private String storeProductId;
 
     @Column(nullable = false, precision = 10, scale = 2)

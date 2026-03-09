@@ -92,7 +92,7 @@ public class UserPointTransaction {
     }
 
     public enum SubCategory {
-        GOOGLE, APPLE, PG_TOSS, PG_INICIS, MISSION
+        GOOGLE, APPLE, PG, MISSION
     }
 
     public enum PointType {

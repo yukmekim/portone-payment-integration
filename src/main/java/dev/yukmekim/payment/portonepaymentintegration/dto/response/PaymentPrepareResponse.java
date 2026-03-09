@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 public record PaymentPrepareResponse(
 
         String merchantUid,
-        String channelKey,
+        String channelGroupId,
         String productName,
         BigDecimal amount,
         String currency,

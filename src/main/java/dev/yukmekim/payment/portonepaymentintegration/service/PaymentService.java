@@ -62,13 +62,8 @@ public class PaymentService {
         Product product = productRepository.findByIdAndIsActiveTrue(request.productId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "상품을 찾을 수 없습니다."));
 
-        StoreType storeType = portOneProperties.routing().get(request.paymentMethod());
-        if (storeType == null) {
-            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "지원하지 않는 결제 수단입니다.");
-        }
-
         ProductStoreMapping storeMapping = productStoreMappingRepository
-                .findByProductAndStoreType(product, storeType)
+                .findByProductAndStoreType(product, StoreType.PG)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "상품 스토어 매핑 정보를 찾을 수 없습니다."));
 
         String merchantUid = MerchantUidGenerator.generate();
@@ -76,7 +71,7 @@ public class PaymentService {
         Purchase purchase = Purchase.builder()
                 .user(user)
                 .product(product)
-                .storeType(storeType)
+                .storeType(StoreType.PG)
                 .merchantUid(merchantUid)
                 .amount(storeMapping.getPrice())
                 .currency(request.currency())
@@ -86,7 +81,7 @@ public class PaymentService {
         purchaseRepository.save(purchase);
         log.info("결제 준비 완료: merchantUid={}, userId={}, productId={}", merchantUid, user.getId(), product.getId());
 
-        return new PaymentPrepareResponse(merchantUid, storeMapping.getStoreProductId(), storeMapping.getName(), storeMapping.getPrice(), request.currency(), user.getEmail(), user.getNickname(), user.getPhoneNumber());
+        return new PaymentPrepareResponse(merchantUid, portOneProperties.channelGroupId(), storeMapping.getName(), storeMapping.getPrice(), request.currency(), user.getEmail(), user.getNickname(), user.getPhoneNumber());
     }
 
     @Transactional
@@ -202,10 +197,9 @@ public class PaymentService {
 
     private UserPointTransaction.SubCategory resolveSubCategory(StoreType storeType) {
         return switch (storeType) {
-            case PG_TOSS -> UserPointTransaction.SubCategory.PG_TOSS;
-            case PG_INICIS -> UserPointTransaction.SubCategory.PG_INICIS;
-            case GOOGLE -> UserPointTransaction.SubCategory.GOOGLE;
-            case IOS -> UserPointTransaction.SubCategory.APPLE;
+            case PG -> UserPointTransaction.SubCategory.PG;
+            case GOOGLE_PLAY -> UserPointTransaction.SubCategory.GOOGLE;
+            case APP_STORE -> UserPointTransaction.SubCategory.APPLE;
         };
     }
 
@@ -213,8 +207,7 @@ public class PaymentService {
         return switch (subCategory) {
             case GOOGLE -> "구글 인앱 구매 상품 지급";
             case APPLE -> "앱스토어 구매 상품 지급";
-            case PG_TOSS -> "토스페이먼츠 결제 상품 지급";
-            case PG_INICIS -> "이니시스 결제 상품 지급";
+            case PG -> "결제 상품 지급";
             case MISSION -> "미션 보상 상품 지급";
         };
     }

@@ -1,5 +1,5 @@
 package dev.yukmekim.payment.portonepaymentintegration.domain.enums;
 
 public enum StoreType {
-    GOOGLE, IOS, PG_TOSS, PG_INICIS
+    PG, GOOGLE_PLAY, APP_STORE
 }

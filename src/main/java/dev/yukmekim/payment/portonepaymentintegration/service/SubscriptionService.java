@@ -67,13 +67,8 @@ public class SubscriptionService {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "구독 상품이 아닙니다.");
         }
 
-        StoreType storeType = portOneProperties.routing().get(request.paymentMethod());
-        if (storeType == null) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "지원하지 않는 결제 수단입니다.");
-        }
-
         ProductStoreMapping storeMapping = productStoreMappingRepository
-                .findByProductAndStoreType(product, storeType)
+                .findByProductAndStoreType(product, StoreType.PG)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "상품 스토어 매핑 정보를 찾을 수 없습니다."));
 
         String paymentId = MerchantUidGenerator.generate();
@@ -81,7 +76,7 @@ public class SubscriptionService {
         Purchase purchase = Purchase.builder()
                 .user(user)
                 .product(product)
-                .storeType(storeType)
+                .storeType(StoreType.PG)
                 .merchantUid(paymentId)
                 .amount(storeMapping.getPrice())
                 .currency(request.currency())
@@ -125,7 +120,7 @@ public class SubscriptionService {
                 .orElseGet(() -> userSubscriptionRepository.save(UserSubscription.builder()
                         .user(user)
                         .product(product)
-                        .storeType(storeType)
+                        .storeType(StoreType.PG)
                         .status(UserSubscription.SubscriptionStatus.ACTIVE)
                         .externalTransactionId(paidPayment.getPgTxId())
                         .storeSubscriptionKey(request.billingKey())

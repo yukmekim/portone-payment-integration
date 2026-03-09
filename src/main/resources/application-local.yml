@@ -27,10 +27,6 @@ server:
 portone:
   api-secret: test-api-secret
   webhook-secret: test-webhook-secret
-  routing:
-    CARD: PG_TOSS
-    KAKAOPAY: PG_INICIS
-    NAVERPAY: PG_INICIS
-    VIRTUAL_ACCOUNT: PG_INICIS
-    TRANSFER: PG_INICIS
-    MOBILE: PG_INICIS
+  channel-group-id: channel-group-test
+  pending-expiry-minutes: 30
+  expiry-scheduler-interval-ms: 300000

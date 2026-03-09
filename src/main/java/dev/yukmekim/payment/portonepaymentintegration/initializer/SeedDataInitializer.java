@@ -74,8 +74,7 @@ public class SeedDataInitializer implements ApplicationRunner {
 
         ProductStoreMapping pointPgMapping = ProductStoreMapping.builder()
                 .product(pointProduct)
-                .storeType(StoreType.PG_TOSS)
-                .storeProductId("channel-key-test")
+                .storeType(StoreType.PG)
                 .price(new BigDecimal("1000.00"))
                 .name("포인트 100")
                 .currency("KRW")
@@ -83,8 +82,7 @@ public class SeedDataInitializer implements ApplicationRunner {
 
         ProductStoreMapping subscriptionPgMapping = ProductStoreMapping.builder()
                 .product(subscriptionProduct)
-                .storeType(StoreType.PG_TOSS)
-                .storeProductId("channel-key-test")
+                .storeType(StoreType.PG)
                 .price(new BigDecimal("9900.00"))
                 .name("프로 구독 1개월")
                 .currency("KRW")

@@ -22,11 +22,5 @@ server:
 portone:
   api-secret: ${PORTONE_API_SECRET}
   webhook-secret: ${PORTONE_WEBHOOK_SECRET}
-  routing:
-    CARD: PG_TOSS
-    KAKAOPAY: PG_INICIS
-    NAVERPAY: PG_INICIS
-    VIRTUAL_ACCOUNT: PG_INICIS
-    TRANSFER: PG_INICIS
-    MOBILE: PG_INICIS
+  channel-group-id: ${PORTONE_CHANNEL_GROUP_ID}
 
