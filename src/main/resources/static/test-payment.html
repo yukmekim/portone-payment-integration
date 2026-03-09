@@ -3,97 +3,317 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>결제 테스트</title>
+  <title>결제 데모</title>
   <script src="https://cdn.portone.io/v2/browser-sdk.js" async defer></script>
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
-    h2 { border-bottom: 1px solid #ddd; padding-bottom: 8px; }
-    .form-group { margin-bottom: 12px; }
-    label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; }
-    input, select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-    button { width: 100%; padding: 12px; background: #4f46e5; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-top: 8px; }
-    button:disabled { background: #a5b4fc; cursor: not-allowed; }
-    pre { background: #f4f4f4; padding: 12px; border-radius: 4px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; }
-    .result { margin-top: 20px; }
-    .success { color: #16a34a; }
-    .error { color: #dc2626; }
-    .hint { font-size: 12px; color: #888; margin-top: 4px; }
-    .tab-group { display: flex; gap: 8px; margin-bottom: 20px; }
-    .tab-btn { flex: 1; padding: 10px; font-size: 14px; border: 2px solid #ccc; border-radius: 6px; background: #fff; color: #555; cursor: pointer; margin-top: 0; }
-    .tab-btn.active { border-color: #4f46e5; background: #eef2ff; color: #4f46e5; font-weight: bold; }
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+      margin: 0;
+      padding: 40px 16px;
+      color: #1d1d1f;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0 0 6px;
+      color: #1d1d1f;
+    }
+
+    .header p {
+      font-size: 13px;
+      color: #86868b;
+      margin: 0;
+    }
+
+    .header a { color: #4f46e5; text-decoration: none; }
+    .header a:hover { text-decoration: underline; }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #86868b;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin: 0 0 16px;
+    }
+
+    /* 상품 유형 탭 */
+    .type-tabs {
+      display: flex;
+      background: #f5f5f7;
+      border-radius: 10px;
+      padding: 4px;
+      gap: 4px;
+      margin-bottom: 24px;
+    }
+
+    .type-tab {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: #86868b;
+      cursor: pointer;
+      transition: all .2s;
+      margin: 0;
+      width: auto;
+    }
+
+    .type-tab.active {
+      background: #fff;
+      color: #4f46e5;
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+
+    /* 입력 필드 */
+    .field { margin-bottom: 16px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #e5e5e7;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #1d1d1f;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .field input:focus { border-color: #4f46e5; }
+    .field input::placeholder { color: #c7c7cc; }
+
+    .field-hint {
+      font-size: 12px;
+      color: #86868b;
+      margin-top: 5px;
+    }
+
+    /* 결제 수단 버튼 */
+    .method-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .method-btn {
+      padding: 10px 6px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1.5px solid #e5e5e7;
+      border-radius: 10px;
+      background: #fff;
+      color: #555;
+      cursor: pointer;
+      text-align: center;
+      transition: all .2s;
+      margin: 0;
+      width: auto;
+    }
+
+    .method-btn.selected {
+      border-color: #4f46e5;
+      background: #eef2ff;
+      color: #4f46e5;
+      font-weight: 600;
+    }
+
+    .method-btn .method-icon {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    /* 결제 버튼 */
+    .pay-btn {
+      width: 100%;
+      padding: 15px;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, opacity .2s;
+      margin: 0;
+    }
+
+    .pay-btn:hover:not(:disabled) { background: #4338ca; }
+    .pay-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* 결과 영역 */
+    .result-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      display: none;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .result-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .result-badge.success { background: #dcfce7; color: #16a34a; }
+    .result-badge.error { background: #fee2e2; color: #dc2626; }
+    .result-badge.info { background: #eef2ff; color: #4f46e5; }
+
+    .result-pre {
+      background: #f5f5f7;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      color: #1d1d1f;
+      margin: 0;
+    }
   </style>
 </head>
 <body>
-  <h2>결제 테스트 페이지</h2>
-  <p class="hint">
-    UUID는 앱 시작 후 <a href="/h2-console" target="_blank">H2 Console</a>에서 확인하세요.<br>
-    (JDBC URL: jdbc:h2:mem:testdb / 사용자명: sa)
-  </p>
-
-  <div class="tab-group">
-    <button class="tab-btn active" id="tabOnetime" onclick="switchMode('onetime')">일회성 상품</button>
-    <button class="tab-btn" id="tabSubscription" onclick="switchMode('subscription')">구독 상품</button>
-  </div>
-
-  <div class="form-group">
-    <label>포트원 Store ID</label>
-    <input id="storeId" type="text" placeholder="store-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
-  </div>
-  <div class="form-group">
-    <label>User ID (UUID)</label>
-    <input id="userId" type="text" placeholder="H2 Console에서 확인" />
-  </div>
-  <div class="form-group">
-    <label>Product ID (UUID)</label>
-    <input id="productId" type="text" placeholder="H2 Console에서 확인" />
-  </div>
-
-  <!-- 일회성 결제 수단 -->
-  <div class="form-group" id="onetimeMethodGroup">
-    <label>결제 수단</label>
-    <select id="paymentMethod">
-      <option value="CARD">카드 (토스페이먼츠 통합창)</option>
-      <option value="KAKAOPAY">카카오페이</option>
-      <option value="NAVERPAY">네이버페이</option>
-      <option value="VIRTUAL_ACCOUNT">가상계좌</option>
-      <option value="TRANSFER">계좌이체</option>
-      <option value="MOBILE">휴대폰</option>
-    </select>
-  </div>
-
-  <!-- 구독 전용 입력 필드 -->
-  <div id="subscriptionGroup" style="display:none">
-    <div class="form-group">
-      <label>Channel Key (빌링키 발급용)</label>
-      <input id="channelKey" type="text" placeholder="channel-key-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
-      <span class="hint">포트원 콘솔 → 결제 연동 화면에서 확인</span>
+  <div class="container">
+    <div class="header">
+      <h1>결제 데모</h1>
+      <p>
+        UUID는 <a href="/h2-console" target="_blank">H2 Console</a>에서 확인하세요.
+        (URL: jdbc:h2:mem:testdb / 사용자명: sa)
+      </p>
     </div>
-    <div class="form-group">
-      <label>결제 수단</label>
-      <select id="billingPaymentMethod">
-        <option value="CARD">카드</option>
-      </select>
+
+    <!-- 상품 유형 탭 -->
+    <div class="type-tabs">
+      <button class="type-tab active" id="tabOnetime" onclick="switchMode('onetime')">일회성 상품</button>
+      <button class="type-tab" id="tabSubscription" onclick="switchMode('subscription')">구독 상품</button>
     </div>
-  </div>
 
-  <button id="payBtn" onclick="startPayment()">결제 시작</button>
+    <!-- 기본 정보 -->
+    <div class="card">
+      <p class="card-title">기본 정보</p>
+      <div class="field">
+        <label>Store ID</label>
+        <input id="storeId" type="text" placeholder="store-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+      </div>
+      <div class="field">
+        <label>User ID</label>
+        <input id="userId" type="text" placeholder="H2 Console에서 확인" />
+      </div>
+      <div class="field">
+        <label>Product ID</label>
+        <input id="productId" type="text" placeholder="H2 Console에서 확인" />
+      </div>
+    </div>
 
-  <div class="result" id="result" style="display:none">
-    <h2>결과</h2>
-    <pre id="resultContent"></pre>
+    <!-- 일회성: 결제 수단 -->
+    <div class="card" id="onetimeMethodGroup">
+      <p class="card-title">결제 수단</p>
+      <div class="method-grid">
+        <button class="method-btn selected" data-value="CARD" onclick="selectMethod(this)">
+          <span class="method-icon">💳</span>카드
+        </button>
+        <button class="method-btn" data-value="KAKAOPAY" onclick="selectMethod(this)">
+          <span class="method-icon">💛</span>카카오페이
+        </button>
+        <button class="method-btn" data-value="NAVERPAY" onclick="selectMethod(this)">
+          <span class="method-icon">🟢</span>네이버페이
+        </button>
+      </div>
+    </div>
+
+    <!-- 구독: 채널 키 -->
+    <div class="card" id="subscriptionGroup" style="display:none">
+      <p class="card-title">구독 결제 정보</p>
+      <div class="field">
+        <label>Channel Key</label>
+        <input id="channelKey" type="text" placeholder="channel-key-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+        <p class="field-hint">포트원 콘솔 → 결제 연동에서 신모듈 채널 키 확인</p>
+      </div>
+      <div class="method-grid" style="margin-top: 8px;">
+        <button class="method-btn selected" data-billing="CARD">
+          <span class="method-icon">💳</span>카드
+        </button>
+      </div>
+    </div>
+
+    <!-- 결제 버튼 -->
+    <button class="pay-btn" id="payBtn" onclick="startPayment()">결제하기</button>
+
+    <!-- 결과 -->
+    <div class="result-card" id="resultCard">
+      <div class="result-header">
+        <span class="result-badge" id="resultBadge"></span>
+      </div>
+      <pre class="result-pre" id="resultContent"></pre>
+    </div>
   </div>
 
   <script>
     let currentMode = 'onetime';
+    let selectedMethod = 'CARD';
 
     function switchMode(mode) {
       currentMode = mode;
       document.getElementById('tabOnetime').classList.toggle('active', mode === 'onetime');
       document.getElementById('tabSubscription').classList.toggle('active', mode === 'subscription');
-      document.getElementById('onetimeMethodGroup').style.display = mode === 'onetime' ? '' : 'none';
-      document.getElementById('subscriptionGroup').style.display = mode === 'subscription' ? '' : 'none';
-      document.getElementById('payBtn').textContent = mode === 'onetime' ? '결제 시작' : '구독 결제 시작';
-      document.getElementById('result').style.display = 'none';
+      document.getElementById('onetimeMethodGroup').style.display = mode === 'onetime' ? 'block' : 'none';
+      document.getElementById('subscriptionGroup').style.display = mode === 'subscription' ? 'block' : 'none';
+      document.getElementById('payBtn').textContent = mode === 'onetime' ? '결제하기' : '구독 시작하기';
+      document.getElementById('resultCard').style.display = 'none';
+    }
+
+    function selectMethod(btn) {
+      document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedMethod = btn.dataset.value;
     }
 
     async function startPayment() {
@@ -108,7 +328,6 @@
       const storeId = document.getElementById('storeId').value.trim();
       const userId = document.getElementById('userId').value.trim();
       const productId = document.getElementById('productId').value.trim();
-      const paymentMethod = document.getElementById('paymentMethod').value;
 
       if (!storeId || !userId || !productId) {
         alert('Store ID, User ID, Product ID를 모두 입력해주세요.');
@@ -118,62 +337,44 @@
       setLoading(true);
 
       try {
-        // 1. 결제 준비
         const prepareRes = await fetch('/api/payments/prepare', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, productId, paymentMethod, currency: 'KRW' }),
+          body: JSON.stringify({ userId, productId, paymentMethod: selectedMethod, currency: 'KRW' }),
         });
 
         const prepareBody = await prepareRes.json();
         if (!prepareBody.success) {
-          showResult('결제 준비 실패', prepareBody, true);
+          showResult('결제 준비 실패', prepareBody, 'error');
           return;
         }
 
-        const { merchantUid, channelKey, productName, amount, customerEmail, customerName, customerPhone } = prepareBody.data;
-        showResult('결제 준비 완료', prepareBody.data);
+        const { merchantUid, channelGroupId, productName, amount, customerEmail, customerName, customerPhone } = prepareBody.data;
+        showResult('결제 준비 완료', prepareBody.data, 'info');
 
-        // 2. 포트원 결제창 호출
         const EASY_PAY_PROVIDERS = {
           KAKAOPAY: 'EASY_PAY_PROVIDER_KAKAOPAY',
           NAVERPAY: 'EASY_PAY_PROVIDER_NAVERPAY',
         };
-        const isEasyPay = paymentMethod in EASY_PAY_PROVIDERS;
+        const isEasyPay = selectedMethod in EASY_PAY_PROVIDERS;
+
         const payment = await PortOne.requestPayment({
           storeId,
-          channelKey,
+          channelGroupId,
           paymentId: merchantUid,
           orderName: productName,
           totalAmount: amount,
           currency: 'KRW',
-          payMethod: isEasyPay ? 'EASY_PAY' : paymentMethod,
-          customer: {
-            email: customerEmail,
-            fullName: customerName,
-            phoneNumber: customerPhone,
-          },
-          ...(isEasyPay && {
-            easyPay: {
-              easyPayProvider: EASY_PAY_PROVIDERS[paymentMethod],
-            },
-          }),
-          ...(paymentMethod === 'VIRTUAL_ACCOUNT' && {
-            virtualAccount: {
-              accountExpiry: { validHours: 1 },
-            },
-          }),
-          ...(paymentMethod === 'MOBILE' && {
-            productType: 'PRODUCT_TYPE_DIGITAL',
-          }),
+          payMethod: isEasyPay ? 'EASY_PAY' : selectedMethod,
+          customer: { email: customerEmail, fullName: customerName, phoneNumber: customerPhone },
+          ...(isEasyPay && { easyPay: { easyPayProvider: EASY_PAY_PROVIDERS[selectedMethod] } }),
         });
 
         if (payment.code !== undefined) {
-          showResult('결제 실패: ' + payment.message, payment, true);
+          showResult('결제 실패', { message: payment.message, code: payment.code }, 'error');
           return;
         }
 
-        // 3. 결제 완료 검증
         const completeRes = await fetch('/api/payments/complete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -184,11 +385,11 @@
         showResult(
           completeBody.success ? '결제 완료' : '검증 실패',
           completeBody,
-          !completeBody.success
+          completeBody.success ? 'success' : 'error'
         );
 
       } catch (e) {
-        showResult('오류 발생', { message: e.message }, true);
+        showResult('오류 발생', { message: e.message }, 'error');
       } finally {
         setLoading(false);
       }
@@ -199,7 +400,6 @@
       const userId = document.getElementById('userId').value.trim();
       const productId = document.getElementById('productId').value.trim();
       const channelKey = document.getElementById('channelKey').value.trim();
-      const paymentMethod = document.getElementById('billingPaymentMethod').value;
 
       if (!storeId || !userId || !productId || !channelKey) {
         alert('Store ID, User ID, Product ID, Channel Key를 모두 입력해주세요.');
@@ -209,7 +409,6 @@
       setLoading(true);
 
       try {
-        // 1. 빌링키 발급
         const issueResponse = await PortOne.requestIssueBillingKey({
           storeId,
           channelKey,
@@ -217,13 +416,12 @@
         });
 
         if (issueResponse.code !== undefined) {
-          showResult('빌링키 발급 실패: ' + issueResponse.message, issueResponse, true);
+          showResult('빌링키 발급 실패', { message: issueResponse.message }, 'error');
           return;
         }
 
-        showResult('빌링키 발급 완료', { billingKey: issueResponse.billingKey });
+        showResult('빌링키 발급 완료', { billingKey: issueResponse.billingKey }, 'info');
 
-        // 2. 구독 결제 처리
         const issueRes = await fetch('/api/subscriptions/issue', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -231,7 +429,7 @@
             userId,
             productId,
             billingKey: issueResponse.billingKey,
-            paymentMethod,
+            paymentMethod: 'CARD',
             currency: 'KRW',
           }),
         });
@@ -240,11 +438,11 @@
         showResult(
           issueBody.success ? '구독 결제 완료' : '구독 결제 실패',
           issueBody,
-          !issueBody.success
+          issueBody.success ? 'success' : 'error'
         );
 
       } catch (e) {
-        showResult('오류 발생', { message: e.message }, true);
+        showResult('오류 발생', { message: e.message }, 'error');
       } finally {
         setLoading(false);
       }
@@ -254,18 +452,28 @@
       const btn = document.getElementById('payBtn');
       btn.disabled = isLoading;
       if (!isLoading) {
-        btn.textContent = currentMode === 'onetime' ? '결제 시작' : '구독 결제 시작';
+        btn.textContent = currentMode === 'onetime' ? '결제하기' : '구독 시작하기';
       } else {
         btn.textContent = '처리 중...';
       }
     }
 
-    function showResult(title, data, isError = false) {
-      const resultEl = document.getElementById('result');
-      const contentEl = document.getElementById('resultContent');
-      resultEl.style.display = 'block';
-      contentEl.className = isError ? 'error' : 'success';
-      contentEl.textContent = `[${title}]\n` + JSON.stringify(data, null, 2);
+    const BADGE_LABELS = {
+      success: '✓ 성공',
+      error: '✕ 실패',
+      info: 'ℹ 진행 중',
+    };
+
+    function showResult(title, data, type = 'info') {
+      const card = document.getElementById('resultCard');
+      const badge = document.getElementById('resultBadge');
+      const content = document.getElementById('resultContent');
+
+      card.style.display = 'block';
+      badge.className = `result-badge ${type}`;
+      badge.textContent = `${BADGE_LABELS[type]}  ${title}`;
+      content.textContent = JSON.stringify(data, null, 2);
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   </script>
 </body>
