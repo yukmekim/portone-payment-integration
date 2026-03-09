@@ -9,7 +9,6 @@ import dev.yukmekim.payment.portonepaymentintegration.domain.Purchase;
 import dev.yukmekim.payment.portonepaymentintegration.domain.Refund;
 import dev.yukmekim.payment.portonepaymentintegration.domain.User;
 import dev.yukmekim.payment.portonepaymentintegration.domain.UserPointTransaction;
-import dev.yukmekim.payment.portonepaymentintegration.domain.UserSubscription;
 import dev.yukmekim.payment.portonepaymentintegration.dto.request.PaymentCancelRequest;
 import dev.yukmekim.payment.portonepaymentintegration.dto.request.PaymentCompleteRequest;
 import dev.yukmekim.payment.portonepaymentintegration.dto.request.PaymentPrepareRequest;
@@ -22,7 +21,6 @@ import dev.yukmekim.payment.portonepaymentintegration.repository.PurchaseReposit
 import dev.yukmekim.payment.portonepaymentintegration.repository.RefundRepository;
 import dev.yukmekim.payment.portonepaymentintegration.repository.UserPointTransactionRepository;
 import dev.yukmekim.payment.portonepaymentintegration.repository.UserRepository;
-import dev.yukmekim.payment.portonepaymentintegration.repository.UserSubscriptionRepository;
 import io.portone.sdk.server.payment.PaidPayment;
 import io.portone.sdk.server.payment.Payment;
 import io.portone.sdk.server.payment.PaymentClient;
@@ -52,7 +50,6 @@ public class PaymentService {
     private final PurchaseRepository purchaseRepository;
     private final RefundRepository refundRepository;
     private final UserPointTransactionRepository userPointTransactionRepository;
-    private final UserSubscriptionRepository userSubscriptionRepository;
     private final PaymentClient paymentClient;
     private final ObjectMapper objectMapper;
     private final PortOneProperties portOneProperties;
@@ -125,8 +122,6 @@ public class PaymentService {
 
         if (purchase.getProduct().getProductType() == Product.ProductType.POINT) {
             grantPoints(purchase);
-        } else if (purchase.getProduct().getProductType() == Product.ProductType.SUBSCRIPTION) {
-            activateSubscription(purchase);
         }
 
         log.info("결제 완료: merchantUid={}, amount={}", request.merchantUid(), portoneAmount);
@@ -179,32 +174,6 @@ public class PaymentService {
                 purchase.getStatus(),
                 cancelAmount
         );
-    }
-
-    private void activateSubscription(Purchase purchase) {
-        User user = purchase.getUser();
-        Product product = purchase.getProduct();
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expiredAt = now.plusMonths(product.getDurationMonths());
-
-        userSubscriptionRepository.findByUserAndIsActiveTrue(user)
-                .ifPresentOrElse(
-                        sub -> sub.renew(now, expiredAt, purchase.getExternalTransactionId()),
-                        () -> userSubscriptionRepository.save(UserSubscription.builder()
-                                .user(user)
-                                .product(product)
-                                .storeType(purchase.getStoreType())
-                                .status(UserSubscription.SubscriptionStatus.ACTIVE)
-                                .externalTransactionId(purchase.getExternalTransactionId())
-                                .startedAt(now)
-                                .currentPeriodStart(now)
-                                .currentPeriodEnd(expiredAt)
-                                .isActive(true)
-                                .build())
-                );
-
-        user.activateSubscription(expiredAt);
-        log.info("구독 활성화 완료: userId={}, expiredAt={}", user.getId(), expiredAt);
     }
 
     private void grantPoints(Purchase purchase) {
