@@ -18,6 +18,9 @@
     .success { color: #16a34a; }
     .error { color: #dc2626; }
     .hint { font-size: 12px; color: #888; margin-top: 4px; }
+    .tab-group { display: flex; gap: 8px; margin-bottom: 20px; }
+    .tab-btn { flex: 1; padding: 10px; font-size: 14px; border: 2px solid #ccc; border-radius: 6px; background: #fff; color: #555; cursor: pointer; margin-top: 0; }
+    .tab-btn.active { border-color: #4f46e5; background: #eef2ff; color: #4f46e5; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -26,6 +29,11 @@
     UUID는 앱 시작 후 <a href="/h2-console" target="_blank">H2 Console</a>에서 확인하세요.<br>
     (JDBC URL: jdbc:h2:mem:testdb / 사용자명: sa)
   </p>
+
+  <div class="tab-group">
+    <button class="tab-btn active" id="tabOnetime" onclick="switchMode('onetime')">일회성 상품</button>
+    <button class="tab-btn" id="tabSubscription" onclick="switchMode('subscription')">구독 상품</button>
+  </div>
 
   <div class="form-group">
     <label>포트원 Store ID</label>
@@ -39,7 +47,9 @@
     <label>Product ID (UUID)</label>
     <input id="productId" type="text" placeholder="H2 Console에서 확인" />
   </div>
-  <div class="form-group">
+
+  <!-- 일회성 결제 수단 -->
+  <div class="form-group" id="onetimeMethodGroup">
     <label>결제 수단</label>
     <select id="paymentMethod">
       <option value="CARD">카드 (토스페이먼츠 통합창)</option>
@@ -51,6 +61,21 @@
     </select>
   </div>
 
+  <!-- 구독 전용 입력 필드 -->
+  <div id="subscriptionGroup" style="display:none">
+    <div class="form-group">
+      <label>Channel Key (빌링키 발급용)</label>
+      <input id="channelKey" type="text" placeholder="channel-key-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+      <span class="hint">포트원 콘솔 → 결제 연동 화면에서 확인</span>
+    </div>
+    <div class="form-group">
+      <label>결제 수단</label>
+      <select id="billingPaymentMethod">
+        <option value="CARD">카드</option>
+      </select>
+    </div>
+  </div>
+
   <button id="payBtn" onclick="startPayment()">결제 시작</button>
 
   <div class="result" id="result" style="display:none">
@@ -59,7 +84,27 @@
   </div>
 
   <script>
+    let currentMode = 'onetime';
+
+    function switchMode(mode) {
+      currentMode = mode;
+      document.getElementById('tabOnetime').classList.toggle('active', mode === 'onetime');
+      document.getElementById('tabSubscription').classList.toggle('active', mode === 'subscription');
+      document.getElementById('onetimeMethodGroup').style.display = mode === 'onetime' ? '' : 'none';
+      document.getElementById('subscriptionGroup').style.display = mode === 'subscription' ? '' : 'none';
+      document.getElementById('payBtn').textContent = mode === 'onetime' ? '결제 시작' : '구독 결제 시작';
+      document.getElementById('result').style.display = 'none';
+    }
+
     async function startPayment() {
+      if (currentMode === 'subscription') {
+        await startSubscriptionPayment();
+      } else {
+        await startOnetimePayment();
+      }
+    }
+
+    async function startOnetimePayment() {
       const storeId = document.getElementById('storeId').value.trim();
       const userId = document.getElementById('userId').value.trim();
       const productId = document.getElementById('productId').value.trim();
@@ -149,10 +194,70 @@
       }
     }
 
+    async function startSubscriptionPayment() {
+      const storeId = document.getElementById('storeId').value.trim();
+      const userId = document.getElementById('userId').value.trim();
+      const productId = document.getElementById('productId').value.trim();
+      const channelKey = document.getElementById('channelKey').value.trim();
+      const paymentMethod = document.getElementById('billingPaymentMethod').value;
+
+      if (!storeId || !userId || !productId || !channelKey) {
+        alert('Store ID, User ID, Product ID, Channel Key를 모두 입력해주세요.');
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        // 1. 빌링키 발급
+        const issueResponse = await PortOne.requestIssueBillingKey({
+          storeId,
+          channelKey,
+          billingKeyMethod: 'CARD',
+        });
+
+        if (issueResponse.code !== undefined) {
+          showResult('빌링키 발급 실패: ' + issueResponse.message, issueResponse, true);
+          return;
+        }
+
+        showResult('빌링키 발급 완료', { billingKey: issueResponse.billingKey });
+
+        // 2. 구독 결제 처리
+        const issueRes = await fetch('/api/subscriptions/issue', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            productId,
+            billingKey: issueResponse.billingKey,
+            paymentMethod,
+            currency: 'KRW',
+          }),
+        });
+
+        const issueBody = await issueRes.json();
+        showResult(
+          issueBody.success ? '구독 결제 완료' : '구독 결제 실패',
+          issueBody,
+          !issueBody.success
+        );
+
+      } catch (e) {
+        showResult('오류 발생', { message: e.message }, true);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     function setLoading(isLoading) {
       const btn = document.getElementById('payBtn');
       btn.disabled = isLoading;
-      btn.textContent = isLoading ? '처리 중...' : '결제 시작';
+      if (!isLoading) {
+        btn.textContent = currentMode === 'onetime' ? '결제 시작' : '구독 결제 시작';
+      } else {
+        btn.textContent = '처리 중...';
+      }
     }
 
     function showResult(title, data, isError = false) {
