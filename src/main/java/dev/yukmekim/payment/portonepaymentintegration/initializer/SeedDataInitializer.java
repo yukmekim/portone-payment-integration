@@ -44,6 +44,7 @@ public class SeedDataInitializer implements ApplicationRunner {
                 .phoneNumber("01012345678")
                 .build();
 
+        user.grantPermission(User.Permission.USER);
         userRepository.save(user);
         log.info("Created 1 user.");
     }
