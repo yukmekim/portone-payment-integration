@@ -109,7 +109,7 @@ public class PaymentService {
         }
 
         purchase.markAsPaid(
-                paidPayment.getPgTxId(),
+                paidPayment.getTransactionId(),
                 extractPaymentMethodType(paidPayment.getMethod()),
                 extractPaymentProvider(paidPayment.getMethod()),
                 serializeToJson(paidPayment)

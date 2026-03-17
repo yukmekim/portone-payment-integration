@@ -110,6 +110,7 @@ public class Purchase {
                            String paymentProvider, String storeData) {
         this.status = PurchaseStatus.PAID;
         this.externalTransactionId = externalTransactionId;
+        this.originalTransactionId = externalTransactionId;
         this.paymentMethod = paymentMethod;
         this.paymentProvider = paymentProvider;
         this.storeData = storeData;
