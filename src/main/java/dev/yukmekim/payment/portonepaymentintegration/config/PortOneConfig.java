@@ -2,6 +2,7 @@ package dev.yukmekim.payment.portonepaymentintegration.config;
 
 import io.portone.sdk.server.payment.PaymentClient;
 import io.portone.sdk.server.payment.paymentschedule.PaymentScheduleClient;
+import io.portone.sdk.server.webhook.WebhookVerifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,5 +19,10 @@ public class PortOneConfig {
     @Bean
     public PaymentScheduleClient paymentScheduleClient(PortOneProperties properties) {
         return new PaymentScheduleClient(properties.apiSecret(), "https://api.portone.io", null);
+    }
+
+    @Bean
+    public WebhookVerifier webhookVerifier(PortOneProperties properties) {
+        return new WebhookVerifier(properties.webhookSecret());
     }
 }
