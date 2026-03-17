@@ -102,7 +102,7 @@ public class SubscriptionService {
         }
 
         purchase.markAsPaid(
-                paidPayment.getPgTxId(),
+                paidPayment.getTransactionId(),
                 extractPaymentMethodType(paidPayment.getMethod()),
                 extractPaymentProvider(paidPayment.getMethod()),
                 serializeToJson(paidPayment)
@@ -110,11 +110,12 @@ public class SubscriptionService {
 
         // 구독 활성화
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expiredAt = now.plusMonths(product.getDurationMonths());
+        LocalDateTime expiredAt = now.plusMinutes(5); // TODO: 테스트용, 실서비스: now.plusMonths(product.getDurationMonths())
 
+        String transactionId = paidPayment.getTransactionId();
         UserSubscription subscription = userSubscriptionRepository.findByUserAndIsActiveTrue(user)
                 .map(sub -> {
-                    sub.renew(now, expiredAt, paidPayment.getPgTxId());
+                    sub.renew(now, expiredAt, transactionId);
                     return sub;
                 })
                 .orElseGet(() -> userSubscriptionRepository.save(UserSubscription.builder()
@@ -122,7 +123,8 @@ public class SubscriptionService {
                         .product(product)
                         .storeType(StoreType.PG)
                         .status(UserSubscription.SubscriptionStatus.ACTIVE)
-                        .externalTransactionId(paidPayment.getPgTxId())
+                        .externalTransactionId(transactionId)
+                        .originalTransactionId(transactionId)
                         .storeSubscriptionKey(request.billingKey())
                         .startedAt(now)
                         .currentPeriodStart(now)
@@ -165,7 +167,7 @@ public class SubscriptionService {
                                      User user, LocalDateTime periodEnd) {
         try {
             String nextPaymentId = MerchantUidGenerator.generate();
-            Instant timeToPay = periodEnd.toInstant(ZoneOffset.UTC);
+            Instant timeToPay = periodEnd.atZone(java.time.ZoneId.systemDefault()).toInstant();
 
             CustomerInput customer = buildCustomerInput(user);
             PaymentAmountInput amount = new PaymentAmountInput(storeMapping.getPrice().longValue(), null, null);
@@ -178,7 +180,7 @@ public class SubscriptionService {
             );
 
             paymentScheduleClient.createPaymentSchedule(nextPaymentId, paymentInput, timeToPay).get();
-            log.info("다음 결제 예약 완료: nextPaymentId={}, timeToPay={}", nextPaymentId, timeToPay);
+            log.info("다음 구독 결제 예약 완료: nextPaymentId={}, timeToPay={}", nextPaymentId, timeToPay);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BusinessException(ErrorCode.PAYMENT_VERIFICATION_FAILED);

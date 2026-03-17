@@ -10,4 +10,6 @@ import java.util.UUID;
 public interface UserSubscriptionRepository extends JpaRepository<UserSubscription, UUID> {
 
     Optional<UserSubscription> findByUserAndIsActiveTrue(User user);
+
+    Optional<UserSubscription> findByStoreSubscriptionKey(String storeSubscriptionKey);
 }
