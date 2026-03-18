@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edge Function 구독 테스트</title>
+  <script src="https://cdn.portone.io/v2/browser-sdk.js" async defer></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+      margin: 0;
+      padding: 40px 16px;
+      color: #1d1d1f;
+    }
+
+    .container { max-width: 520px; margin: 0 auto; }
+
+    .header { text-align: center; margin-bottom: 32px; }
+    .header h1 { font-size: 24px; font-weight: 700; margin: 0 0 6px; }
+    .header p { font-size: 13px; color: #86868b; margin: 0; }
+    .header a { color: #4f46e5; text-decoration: none; }
+    .header a:hover { text-decoration: underline; }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #86868b;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin: 0 0 16px;
+    }
+
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .field input, .field textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #e5e5e7;
+      border-radius: 10px;
+      font-size: 13px;
+      color: #1d1d1f;
+      outline: none;
+      transition: border-color .2s;
+      font-family: inherit;
+    }
+
+    .field input:focus, .field textarea:focus { border-color: #4f46e5; }
+    .field input::placeholder, .field textarea::placeholder { color: #c7c7cc; }
+
+    .field textarea { resize: vertical; min-height: 72px; }
+
+    .field-hint { font-size: 12px; color: #86868b; margin-top: 5px; }
+
+    .step-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, opacity .2s;
+      margin: 0;
+    }
+
+    .step-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    .btn-primary { background: #4f46e5; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #4338ca; }
+
+    .btn-success { background: #16a34a; color: #fff; }
+    .btn-success:hover:not(:disabled) { background: #15803d; }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 4px 0;
+      color: #c7c7cc;
+      font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e5e5e7;
+    }
+
+    /* 빌링키 박스 */
+    .billing-key-box {
+      display: none;
+      background: #eef2ff;
+      border: 1.5px solid #c7d2fe;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .billing-key-box .bk-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #4f46e5;
+      margin-bottom: 6px;
+    }
+
+    .billing-key-box .bk-value {
+      font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: #1d1d1f;
+      word-break: break-all;
+    }
+
+    /* 결과 */
+    .result-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      display: none;
+      margin-top: 8px;
+    }
+
+    .result-header { margin-bottom: 12px; }
+
+    .result-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .result-badge.success { background: #dcfce7; color: #16a34a; }
+    .result-badge.error   { background: #fee2e2; color: #dc2626; }
+    .result-badge.info    { background: #eef2ff; color: #4f46e5; }
+
+    .result-section { margin-bottom: 12px; }
+    .result-section:last-child { margin-bottom: 0; }
+
+    .result-section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #86868b;
+      margin-bottom: 6px;
+    }
+
+    .result-pre {
+      background: #f5f5f7;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      color: #1d1d1f;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Edge Function 구독 테스트</h1>
+      <p>빌링키 발급 → <code>verify-portone-subscription</code> 호출</p>
+    </div>
+
+    <!-- STEP 1: PortOne 설정 -->
+    <div class="card">
+      <p class="card-title">Step 1. PortOne 설정</p>
+      <div class="field">
+        <label>Store ID</label>
+        <input id="storeId" type="text" placeholder="store-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+      </div>
+      <div class="field">
+        <label>Channel Key</label>
+        <input id="channelKey" type="text" placeholder="channel-key-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+        <p class="field-hint">포트원 콘솔 → 결제연동에서 빌링키 발급 채널 키 확인</p>
+      </div>
+    </div>
+
+    <!-- STEP 2: Edge Function 설정 -->
+    <div class="card">
+      <p class="card-title">Step 2. Edge Function 설정</p>
+      <div class="field">
+        <label>Supabase Edge Function URL</label>
+        <input id="edgeFunctionUrl" type="text" placeholder="https://xxxx.supabase.co/functions/v1/verify-portone-subscription" />
+      </div>
+      <div class="field">
+        <label>Supabase JWT Token</label>
+        <textarea id="jwtToken" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."></textarea>
+        <p class="field-hint">Supabase Dashboard → Authentication → 사용자 JWT 또는 클라이언트 로그인 후 access_token</p>
+      </div>
+      <div class="field">
+        <label>Product Store ID</label>
+        <input id="productStoreId" type="text" placeholder="product_store_mapping.id (UUID)" />
+        <p class="field-hint">DB의 product_store_mapping 테이블에서 store_type='pg'인 항목의 id</p>
+      </div>
+    </div>
+
+    <!-- 빌링키 발급 버튼 -->
+    <button class="step-btn btn-primary" id="issueBtn" onclick="issueBillingKey()">
+      1단계: 빌링키 발급 (카드 등록)
+    </button>
+
+    <!-- 발급된 빌링키 표시 -->
+    <div class="billing-key-box" id="billingKeyBox">
+      <div class="bk-label">발급된 빌링키</div>
+      <div class="bk-value" id="billingKeyValue"></div>
+    </div>
+
+    <div class="divider">빌링키 발급 완료 후</div>
+
+    <!-- Edge Function 호출 버튼 -->
+    <button class="step-btn btn-success" id="subscribeBtn" onclick="callEdgeFunction()" disabled>
+      2단계: Edge Function 호출 (구독 결제)
+    </button>
+
+    <!-- 결과 -->
+    <div class="result-card" id="resultCard">
+      <div class="result-header">
+        <span class="result-badge" id="resultBadge"></span>
+      </div>
+      <div id="resultSections"></div>
+    </div>
+  </div>
+
+  <script>
+    let issuedBillingKey = null;
+
+    async function issueBillingKey() {
+      const storeId = document.getElementById('storeId').value.trim();
+      const channelKey = document.getElementById('channelKey').value.trim();
+
+      if (!storeId || !channelKey) {
+        alert('Store ID와 Channel Key를 입력해주세요.');
+        return;
+      }
+
+      setIssueLoading(true);
+      hideResult();
+
+      try {
+        const response = await PortOne.requestIssueBillingKey({
+          storeId,
+          channelKey,
+          billingKeyMethod: 'CARD',
+        });
+
+        if (response.code !== undefined) {
+          showResult('빌링키 발급 실패', 'error', [
+            { title: '오류', data: { code: response.code, message: response.message } },
+          ]);
+          return;
+        }
+
+        issuedBillingKey = response.billingKey;
+
+        document.getElementById('billingKeyValue').textContent = issuedBillingKey;
+        document.getElementById('billingKeyBox').style.display = 'block';
+        document.getElementById('subscribeBtn').disabled = false;
+
+        showResult('빌링키 발급 완료', 'info', [
+          { title: '발급 결과', data: { billingKey: issuedBillingKey } },
+        ]);
+      } catch (e) {
+        showResult('오류 발생', 'error', [
+          { title: '오류', data: { message: e.message } },
+        ]);
+      } finally {
+        setIssueLoading(false);
+      }
+    }
+
+    async function callEdgeFunction() {
+      const edgeFunctionUrl = document.getElementById('edgeFunctionUrl').value.trim();
+      const jwtToken = document.getElementById('jwtToken').value.trim();
+      const productStoreId = document.getElementById('productStoreId').value.trim();
+
+      if (!edgeFunctionUrl || !jwtToken || !productStoreId) {
+        alert('Edge Function URL, JWT Token, Product Store ID를 입력해주세요.');
+        return;
+      }
+
+      if (!issuedBillingKey) {
+        alert('먼저 빌링키를 발급해주세요.');
+        return;
+      }
+
+      setSubscribeLoading(true);
+
+      const requestBody = {
+        billingKey: issuedBillingKey,
+        productStoreId,
+      };
+
+      try {
+        const res = await fetch(edgeFunctionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken}`,
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        const data = await res.json();
+
+        showResult(
+          data.success ? '구독 결제 완료' : '구독 결제 실패',
+          data.success ? 'success' : 'error',
+          [
+            { title: '요청 (Request Body)', data: requestBody },
+            { title: `응답 (HTTP ${res.status})`, data },
+          ]
+        );
+      } catch (e) {
+        showResult('네트워크 오류', 'error', [
+          { title: '요청 (Request Body)', data: requestBody },
+          { title: '오류', data: { message: e.message } },
+        ]);
+      } finally {
+        setSubscribeLoading(false);
+      }
+    }
+
+    function setIssueLoading(loading) {
+      const btn = document.getElementById('issueBtn');
+      btn.disabled = loading;
+      btn.textContent = loading ? '카드 등록 중...' : '1단계: 빌링키 발급 (카드 등록)';
+    }
+
+    function setSubscribeLoading(loading) {
+      const btn = document.getElementById('subscribeBtn');
+      btn.disabled = loading;
+      btn.textContent = loading ? '처리 중...' : '2단계: Edge Function 호출 (구독 결제)';
+    }
+
+    function hideResult() {
+      document.getElementById('resultCard').style.display = 'none';
+    }
+
+    const BADGE_LABELS = { success: '✓ 성공', error: '✕ 실패', info: 'ℹ 진행 중' };
+
+    function showResult(title, type, sections) {
+      const card = document.getElementById('resultCard');
+      const badge = document.getElementById('resultBadge');
+      const sectionsEl = document.getElementById('resultSections');
+
+      badge.className = `result-badge ${type}`;
+      badge.textContent = `${BADGE_LABELS[type]}  ${title}`;
+
+      sectionsEl.innerHTML = sections.map(s => `
+        <div class="result-section">
+          <div class="result-section-title">${s.title}</div>
+          <pre class="result-pre">${JSON.stringify(s.data, null, 2)}</pre>
+        </div>
+      `).join('');
+
+      card.style.display = 'block';
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  </script>
+</body>
+</html>
