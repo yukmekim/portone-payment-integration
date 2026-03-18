@@ -40,8 +40,8 @@ cd portone-payment-integration
 ```yaml
 portone:
   api-secret: {V2_API_SECRET}
-  store-id: {STORE_ID}
-  channel-key: {CHANNEL_KEY}
+  webhook-secret: {WEBHOOK_SECRET}
+  channel-group-id: {CHANNEL_GROUP_ID}
 ```
 
 > 테스트 키는 포트원 콘솔(https://admin.portone.io)에서 발급받을 수 있습니다.
@@ -54,13 +54,12 @@ portone:
 
 ---
 
-## 주요 기능 (예정)
+## 주요 기능
 
-- 결제 요청 및 결제창 연동
-- 결제 완료 후 서버 측 검증 (금액 위변조 방지)
+- 스마트 라우팅 기반 일회성 결제 요청 및 서버 검증 (금액 위변조 방지)
+- 빌링키 발급 및 구독 결제 (즉시 결제 + 다음 회차 예약)
 - 결제 취소 및 부분 취소
-- 결제 내역 조회
-
+- 웹훅 수신 및 서명 검증
 ---
 
 ## API 문서
@@ -73,6 +72,17 @@ http://localhost:8080/swagger-ui.html
 
 ---
 
+## 테스트 페이지
+
+서버 실행 후 아래 페이지에서 결제 흐름을 직접 테스트할 수 있습니다.
+
+| 페이지 | 설명 |
+|--------|------|
+| `http://localhost:8080/test-payment.html` | Spring Boot 서버 기반 일회성/구독 결제 테스트 |
+| `http://localhost:8080/test-edge-subscription.html` | Supabase Edge Function 구독 결제 테스트 |
+
+---
+
 ## 프로젝트 구조
 
 ```
@@ -80,12 +90,14 @@ src/main/java/dev/yukmekim/payment/portonepaymentintegration/
 ├── common/
 │   ├── exception/          # 공통 예외 처리
 │   └── response/           # 공통 응답 형식
-├── config/                 # JPA, OpenAPI 설정
-├── domain/common/          # BaseTime (Auditing)
+├── config/                 # JPA, OpenAPI, PortOne 설정
 ├── controller/             # API 엔드포인트
-├── service/                # 비즈니스 로직
+├── domain/                 # JPA 엔티티
+├── dto/                    # 요청/응답 DTO
+├── initializer/            # 테스트 시드 데이터
 ├── repository/             # 데이터 접근
-└── dto/                    # 요청/응답 DTO
+├── scheduler/              # 결제 만료 스케줄러
+└── service/                # 비즈니스 로직
 ```
 
 ---
